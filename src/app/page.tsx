@@ -1,7 +1,7 @@
 'use client';
 
 import { useFamilyRoots } from '@/hooks/use-family-roots';
-import { FamilyRootCard } from '@/app/components/FamilyRootCard';
+import { FamilyTreePager } from '@/app/components/FamilyTreePager';
 
 function SkeletonCard() {
   return (
@@ -53,16 +53,15 @@ export default function Home() {
     );
   }
 
-  return (
-    <div className="flex flex-col pt-8 gap-3 p-4">
-      {isLoading
-        ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-        : data?.data.map((root) => (
-            <FamilyRootCard
-              key={root.father?.id ?? root.mother?.id}
-              root={root}
-            />
-          ))}
-    </div>
-  );
+  if (isLoading || !data) {
+    return (
+      <div className="flex flex-col pt-8 gap-3 p-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </div>
+    );
+  }
+
+  return <FamilyTreePager rootFamilies={data.data} />;
 }

@@ -2,25 +2,25 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
-import type { Person, FamilyRoot } from '@/types/family-tree';
+import type { Person } from '@/types/family-tree';
 import { Gender } from '@/types/family-tree';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type CardVariant = 'married' | 'single-man' | 'single-woman';
 type Align = 'left' | 'right';
 
 export interface FamilyRootCardProps {
-  root: FamilyRoot;
+  /** Ordered list of people to display — 1 person = single, 2 = married couple. */
+  people: Person[];
   align?: Align;
+  onTap?: () => void;
+  isOpened?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getCardVariant(root: FamilyRoot): CardVariant {
-  if (root.father && root.mother) return 'married';
-  if (root.father) return 'single-man';
-  return 'single-woman';
+function getRole(person: Person): string {
+  return person.gender === Gender.MAN ? 'Husband' : 'Wife';
 }
 
 function formatDate(iso: string): string {
@@ -124,33 +124,39 @@ function CardHeader({ align }: { align: Align }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function FamilyRootCard({ root, align = 'left' }: FamilyRootCardProps) {
-  const variant = getCardVariant(root);
-  const isMarried = variant === 'married';
+export function FamilyRootCard({
+  people,
+  align = 'left',
+  onTap,
+  isOpened = false,
+}: FamilyRootCardProps) {
+  const isMarried = people.length > 1;
 
   return (
-    <div className="bg-white rounded-lg p-2 flex flex-col gap-2 shadow-sm">
+    <div
+      className={[
+        'bg-white rounded-lg p-2 flex flex-col gap-2 shadow-sm',
+        onTap ? 'cursor-pointer active:scale-[0.98] transition-transform' : '',
+        isOpened ? 'ring-1 ring-[#242424]/10' : '',
+      ].join(' ')}
+      onClick={isMarried ? onTap : undefined}
+      role={onTap ? 'button' : undefined}
+      tabIndex={onTap ? 0 : undefined}
+      onKeyDown={onTap ? (e) => e.key === 'Enter' && onTap() : undefined}
+    >
       {isMarried && <CardHeader align={align} />}
 
-      {root.father && (
-        <PersonRow
-          member={root.father}
-          role={isMarried ? 'Husband' : undefined}
-          align={align}
-        />
-      )}
-
-      {isMarried && root.father && root.mother && (
-        <div className="h-px w-full bg-[#EDEDED]" />
-      )}
-
-      {root.mother && (
-        <PersonRow
-          member={root.mother}
-          role={isMarried ? 'Wife' : undefined}
-          align={align}
-        />
-      )}
+      {people.map((person, index) => (
+        // key on the outermost element returned by map — fixes the React warning
+        <div key={person.id} className="flex gap-2 flex-col">
+          <PersonRow
+            member={person}
+            role={isMarried ? getRole(person) : undefined}
+            align={align}
+          />
+          {index < people.length - 1 && <div className="h-px w-full bg-[#EDEDED]" />}
+        </div>
+      ))}
     </div>
   );
 }
