@@ -1,60 +1,31 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
 import type { Person, FamilyRoot } from '@/types/family-tree';
 import { Gender } from '@/types/family-tree';
+import { Avatar } from '@/app/components/Avatar';
+import Birthdate from './Birthdate';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type CardVariant = 'married' | 'single-man' | 'single-woman';
 type Align = 'left' | 'right';
 
 export interface FamilyRootCardProps {
-  root: FamilyRoot;
+  people: Person[];
   align?: Align;
+  isTappable?: boolean;
+  onTap?: (person: Person, people: Person[]) => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getCardVariant(root: FamilyRoot): CardVariant {
-  if (root.father && root.mother) return 'married';
-  if (root.father) return 'single-man';
-  return 'single-woman';
+function getPersonRole(person: Person): string {
+  if (person.gender === Gender.MAN) return 'Husband';
+  return 'Wife';
 }
 
 function formatDate(iso: string): string {
   return iso.slice(0, 10);
-}
-
-// ─── Avatar ───────────────────────────────────────────────────────────────────
-
-function Avatar({ member }: { member: Person }) {
-  const fallbackPath = member.gender === Gender.MAN ? '/avatar_man.png' : '/avatar_woman.png';
-  const [src, setSrc] = useState(member.profilePictureUrl || fallbackPath);
-
-  if (member.profilePictureUrl) {
-    return (
-      <Image
-        src={src}
-        alt={member.name}
-        width={48}
-        height={48}
-        className="w-12 h-12 rounded-full object-cover shrink-0"
-        onError={() => setSrc(fallbackPath)}
-      />
-    );
-  }
-
-  return (
-    <Image
-      src={fallbackPath}
-      alt={member.name}
-      width={48}
-      height={48}
-      className="w-12 h-12 rounded-full object-cover shrink-0"
-    />
-  );
 }
 
 // ─── Person Row ───────────────────────────────────────────────────────────────
@@ -81,12 +52,7 @@ function PersonRow({ member, role, align }: PersonRowProps) {
           {member.name}
         </span>
         {member.birthDate && (
-          <div className={`flex items-center gap-1 ${isLeft ? 'flex-row' : 'flex-row-reverse'}`}>
-            <Image src="/ic_date.svg" alt="" width={12} height={12} />
-            <span className="text-[11px] font-normal text-[#A2A2A2] font-sora">
-              {formatDate(member.birthDate)}
-            </span>
-          </div>
+          <Birthdate birthDate={member.birthDate} align={align} />
         )}
       </div>
     </div>
@@ -124,33 +90,59 @@ function CardHeader({ align }: { align: Align }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function FamilyRootCard({ root, align = 'left' }: FamilyRootCardProps) {
-  const variant = getCardVariant(root);
-  const isMarried = variant === 'married';
+export function FamilyRootCard({
+  people,
+  align = 'left',
+  isTappable = false,
+  onTap,
+}: FamilyRootCardProps) {
+  const isMarried = people.length > 1;
+
+  if (people.length === 0) {
+    return null;
+  }
+
+  // const canTap = isTappable && isMarried && Boolean(onTap);
+  // use this when user detail is ready
+  const canTap = isTappable && Boolean(onTap);
+  const primaryPerson = people[0];
+
+  function handleTap() {
+    if (!canTap || !primaryPerson || !onTap) {
+      return;
+    }
+    onTap(primaryPerson, people);
+  }
 
   return (
-    <div className="bg-white rounded-lg p-2 flex flex-col gap-2 shadow-sm">
+    <div
+      className={`bg-white rounded-lg p-2 flex flex-col gap-2 shadow-sm ${canTap ? 'cursor-pointer active:scale-[0.99] transition-transform' : ''
+        }`}
+      onClick={handleTap}
+      role={canTap ? 'button' : undefined}
+      tabIndex={canTap ? 0 : undefined}
+      onKeyDown={(event) => {
+        if (!canTap) {
+          return;
+        }
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleTap();
+        }
+      }}
+    >
       {isMarried && <CardHeader align={align} />}
 
-      {root.father && (
-        <PersonRow
-          member={root.father}
-          role={isMarried ? 'Husband' : undefined}
-          align={align}
-        />
-      )}
-
-      {isMarried && root.father && root.mother && (
-        <div className="h-px w-full bg-[#EDEDED]" />
-      )}
-
-      {root.mother && (
-        <PersonRow
-          member={root.mother}
-          role={isMarried ? 'Wife' : undefined}
-          align={align}
-        />
-      )}
+      {people.map((person, index) => (
+        <div key={person.id} className="flex flex-col gap-2">
+          <PersonRow
+            member={person}
+            role={isMarried ? getPersonRole(person) : undefined}
+            align={align}
+          />
+          {index < people.length - 1 && <div className="h-px w-full bg-[#EDEDED]" />}
+        </div>
+      ))}
     </div>
   );
 }

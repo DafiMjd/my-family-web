@@ -1,7 +1,12 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useFamilyRoots } from '@/hooks/use-family-roots';
 import { FamilyRootCard } from '@/app/components/FamilyRootCard';
+import { PersonDetailModal } from '@/app/components/PersonDetailModal';
+import { serializeParentPeople, toPeopleFromRoot } from '@/lib/family-navigation';
+import type { Person } from '@/types/family-tree';
 
 function SkeletonCard() {
   return (
@@ -35,6 +40,8 @@ function SkeletonCard() {
 }
 
 export default function Home() {
+  const router = useRouter();
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const { data, isLoading, isError, error, refetch, isFetching } = useFamilyRoots();
 
   if (isError) {
@@ -54,15 +61,35 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col pt-8 gap-3 p-4">
-      {isLoading
-        ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-        : data?.data.map((root) => (
-            <FamilyRootCard
-              key={root.father?.id ?? root.mother?.id}
-              root={root}
-            />
-          ))}
-    </div>
+    <>
+      <div className="flex flex-col pt-8 gap-3 p-4">
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+          : data?.data.map((root) => {
+              const people = toPeopleFromRoot(root);
+              return (
+                <FamilyRootCard
+                  key={root.father?.id ?? root.mother?.id}
+                  people={people}
+                  isTappable={people.length > 0}
+                  onTap={(person) => {
+                    if (root.isMarried) {
+                      const payload = serializeParentPeople(root);
+                      router.push(`/family/${person.id}?parent=${payload}`);
+                      return;
+                    }
+                    setSelectedPerson(person);
+                  }}
+                />
+              );
+            })}
+      </div>
+
+      <PersonDetailModal
+        person={selectedPerson}
+        isOpen={Boolean(selectedPerson)}
+        onClose={() => setSelectedPerson(null)}
+      />
+    </>
   );
 }

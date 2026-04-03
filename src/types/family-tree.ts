@@ -28,3 +28,25 @@ export interface FamilyRootsResponse {
   data: FamilyRoot[];
   count: number;
 }
+
+export interface PersonWithSpouse extends Person {
+  relationshipType: string;
+  spouse: Person | null;
+}
+
+export interface FamilyChildrenResponse {
+  success: boolean;
+  data: PersonWithSpouse[];
+  count: number;
+}
+
+export interface ClosestRelatedPeople {
+  spouse: Person | null;
+  children: Person[];
+  parents: Person[];
+}
+
+export interface ClosestRelatedPeopleResponse {
+  success: boolean;
+  data: ClosestRelatedPeople;
+}
