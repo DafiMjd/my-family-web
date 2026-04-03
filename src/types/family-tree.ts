@@ -50,3 +50,9 @@ export interface ClosestRelatedPeopleResponse {
   success: boolean;
   data: ClosestRelatedPeople;
 }
+
+export interface PersonListResponse {
+  success: boolean;
+  data: Person[];
+  count: number;
+}

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFamilyRoots } from '@/hooks/use-family-roots';
+import { usePersonSearch } from '@/hooks/use-person-search';
 import { FamilyRootCard } from '@/app/components/FamilyRootCard';
 import { PersonDetailModal } from '@/app/components/PersonDetailModal';
 import { serializeParentPeople, toPeopleFromRoot } from '@/lib/family-navigation';
@@ -42,7 +43,53 @@ function SkeletonCard() {
 export default function Home() {
   const router = useRouter();
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearchInput, setDebouncedSearchInput] = useState('');
   const { data, isLoading, isError, error, refetch, isFetching } = useFamilyRoots();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const {
+    data: searchInfiniteData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isSearchLoading,
+    isError: isSearchError,
+    error: searchError,
+  } = usePersonSearch(debouncedSearchInput);
+  const isSearchActive = debouncedSearchInput.trim().length >= 3;
+  const searchPeople =
+    searchInfiniteData?.pages.flatMap((page) => page.data) ?? [];
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearchInput(searchInput);
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [searchInput]);
+
+  useEffect(() => {
+    if (!isSearchActive) {
+      return;
+    }
+    const node = loadMoreRef.current;
+    if (!node) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      { rootMargin: '120px', threshold: 0 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isSearchActive, hasNextPage, isFetchingNextPage, fetchNextPage, searchPeople.length]);
 
   if (isError) {
     return (
@@ -63,26 +110,71 @@ export default function Home() {
   return (
     <>
       <div className="flex flex-col pt-8 gap-3 p-4">
-        {isLoading
-          ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-          : data?.data.map((root) => {
-              const people = toPeopleFromRoot(root);
-              return (
-                <FamilyRootCard
-                  key={root.father?.id ?? root.mother?.id}
-                  people={people}
-                  isTappable={people.length > 0}
-                  onTap={(person) => {
-                    if (root.isMarried) {
-                      const payload = serializeParentPeople(root);
-                      router.push(`/family/${person.id}?parent=${payload}`);
-                      return;
-                    }
-                    setSelectedPerson(person);
-                  }}
-                />
-              );
-            })}
+        <input
+          type="text"
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          placeholder="Search person name..."
+          className="w-full rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#242424] outline-none focus:border-[#242424]"
+        />
+
+        {searchInput.trim().length > 0 && searchInput.trim().length < 3 ? (
+          <p className="text-xs text-[#909090] font-sora">Type at least 3 characters to search.</p>
+        ) : null}
+
+        {isSearchActive ? (
+          <>
+            {isSearchLoading ? <p className="text-sm text-[#909090] font-sora">Searching...</p> : null}
+
+            {isSearchError ? (
+              <p className="text-sm text-red-500 font-sora">{searchError.message}</p>
+            ) : null}
+
+            {!isSearchLoading && !isSearchError && searchPeople.length === 0 ? (
+              <p className="text-sm text-[#909090] font-sora">No person found.</p>
+            ) : null}
+
+            {!isSearchLoading && !isSearchError
+              ? searchPeople.map((person) => (
+                  <FamilyRootCard
+                    key={person.id}
+                    people={[person]}
+                    isTappable
+                    onTap={(tappedPerson) => setSelectedPerson(tappedPerson)}
+                  />
+                ))
+              : null}
+
+            {isSearchActive && !isSearchError ? (
+              <div ref={loadMoreRef} className="h-1 w-full shrink-0" aria-hidden />
+            ) : null}
+
+            {isFetchingNextPage ? (
+              <p className="text-xs text-[#909090] font-sora text-center">Loading more...</p>
+            ) : null}
+          </>
+        ) : isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+        ) : (
+          data?.data.map((root) => {
+            const people = toPeopleFromRoot(root);
+            return (
+              <FamilyRootCard
+                key={root.father?.id ?? root.mother?.id}
+                people={people}
+                isTappable={people.length > 0}
+                onTap={(person) => {
+                  if (root.isMarried) {
+                    const payload = serializeParentPeople(root);
+                    router.push(`/family/${person.id}?parent=${payload}`);
+                    return;
+                  }
+                  setSelectedPerson(person);
+                }}
+              />
+            );
+          })
+        )}
       </div>
 
       <PersonDetailModal
