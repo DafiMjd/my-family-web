@@ -1,7 +1,6 @@
 'use client';
 
 import { Avatar } from '@/app/components/Avatar';
-import Image from 'next/image';
 import { useClosestRelatedPeople } from '@/hooks/use-closest-related-people';
 import type { Person } from '@/types/family-tree';
 import Birthdate from './Birthdate';
