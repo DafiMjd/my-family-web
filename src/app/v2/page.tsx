@@ -136,13 +136,13 @@ export default function Home() {
 
             {!isSearchLoading && !isSearchError
               ? searchPeople.map((person) => (
-                  <FamilyRootCard
-                    key={person.id}
-                    people={[person]}
-                    isTappable
-                    onTap={(tappedPerson) => setSelectedPerson(tappedPerson)}
-                  />
-                ))
+                <FamilyRootCard
+                  key={person.id}
+                  people={[person]}
+                  isTappable
+                  onTap={(tappedPerson) => setSelectedPerson(tappedPerson)}
+                />
+              ))
               : null}
 
             {isSearchActive && !isSearchError ? (

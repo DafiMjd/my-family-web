@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FamilyRootCard } from '@/app/components/FamilyRootCard';
 import { useFamilyChildren } from '@/hooks/use-family-children';
 import { useFamilyRoots } from '@/hooks/use-family-roots';
 import type { Person, PersonWithSpouse } from '@/types/family-tree';
+import { usePersonSearch } from '@/hooks/use-person-search';
+import { PersonDetailModal } from './components/PersonDetailModal';
 
 function toCardPeople(child: PersonWithSpouse): Person[] {
   return child.spouse ? [child, child.spouse] : [child];
@@ -101,11 +103,60 @@ function FamilyBranch({
   );
 }
 
-export default function DashboardPage() {
+export default function Home() {
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
   const router = useRouter();
   const { data, isLoading, isError } = useFamilyRoots();
   const [openedRoots, setOpenedRoots] = useState<Record<string, boolean>>({});
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearchInput, setDebouncedSearchInput] = useState('');
+
+  const {
+    data: searchInfiniteData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isSearchLoading,
+    isError: isSearchError,
+    error: searchError,
+  } = usePersonSearch(debouncedSearchInput);
+  const isSearchActive = debouncedSearchInput.trim().length >= 3;
+  const searchPeople =
+    searchInfiniteData?.pages.flatMap((page) => page.data) ?? [];
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearchInput(searchInput);
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [searchInput]);
+
+  useEffect(() => {
+    if (!isSearchActive) {
+      return;
+    }
+    const node = loadMoreRef.current;
+    if (!node) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      { rootMargin: '120px', threshold: 0 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isSearchActive, hasNextPage, isFetchingNextPage, fetchNextPage, searchPeople.length]);
 
   function handleTapRoot(person: Person, people: Person[]) {
     if (people.length > 1) {
@@ -132,55 +183,111 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col flex-1">
-      <main className="flex flex-1 items-start justify-start overflow-auto">
-        <section className="w-full px-6 pt-6 pb-6">
-          <h1 className="text-lg font-semibold text-[#242424]">Family Tree</h1>
+    <>
+      <div className="flex flex-col flex-1">
+        <div className="flex flex-col px-4">
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder="Search person name..."
+            className="rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 mt-10 text-sm text-[#242424] outline-none focus:border-[#242424]"
+          />
 
-          <div className="mt-4 flex flex-col gap-3 min-w-max">
-            {isLoading ? (
-              <p className="text-sm text-[#909090] font-sora">Loading generasi pertama ...</p>
+          {searchInput.trim().length > 0 && searchInput.trim().length < 3 ? (
+            <p className="text-xs pt-2 text-[#909090] font-sora">Type at least 3 characters to search.</p>
+          ) : null}
+        </div>
+
+        {isSearchActive ? (
+          <div className="flex flex-col p-4 gap-2">
+            {isSearchLoading ? <p className="text-sm text-[#909090] font-sora">Searching...</p> : null}
+
+            {isSearchError ? (
+              <p className="text-sm text-red-500 font-sora">{searchError.message}</p>
             ) : null}
 
-            {isError ? (
-              <p className="text-sm text-red-500 font-sora">Gagal memuat generasi pertama.</p>
+            {!isSearchLoading && !isSearchError && searchPeople.length === 0 ? (
+              <p className="text-sm text-[#909090] font-sora">No person found.</p>
             ) : null}
 
-            {!isLoading && !isError && data?.data.length === 0 ? (
-              <p className="text-sm text-[#909090] font-sora">Tidak ada data generasi pertama.</p>
-            ) : null}
-
-            {!isLoading && !isError
-              ? data?.data.map((root, index) => {
-                const people = [root.father, root.mother].filter(
-                  (person): person is Person => person !== null,
-                );
-                const father = people.find((person) => person.gender === 'MAN');
-                const rootId = father?.id ?? people[0]?.id ?? `${index}`;
-                const isOpen = Boolean(openedRoots[rootId]);
-
-                return (
-                  <div
-                    key={`${root.father?.id ?? 'no-father'}-${root.mother?.id ?? 'no-mother'}-${index}`}
-                    className="relative"
-                  >
-                    <div className="flex items-start">
-                      <FamilyRootCard people={people} isTappable onTap={handleTapRoot} />
-
-                      {isOpen ? (
-                        <div className="relative pl-4 pt-2">
-                          <FamilyBranch personId={rootId} />
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })
+            {!isSearchLoading && !isSearchError
+              ? searchPeople.map((person) => (
+                <FamilyRootCard
+                  key={person.id}
+                  people={[person]}
+                  isTappable
+                  onTap={(tappedPerson) => setSelectedPerson(tappedPerson)}
+                />
+              ))
               : null}
-          </div>
-        </section>
-      </main>
 
-    </div>
+            {isSearchActive && !isSearchError ? (
+              <div ref={loadMoreRef} className="h-1 w-full shrink-0" aria-hidden />
+            ) : null}
+
+            {isFetchingNextPage ? (
+              <p className="text-xs text-[#909090] font-sora text-center">Loading more...</p>
+            ) : null}
+          </div>
+        ) :
+
+          <main className="flex flex-1 items-start justify-start overflow-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <section className="w-full px-6 pt-6 pb-6">
+              <h1 className="text-lg font-semibold text-[#242424]">Family Tree</h1>
+
+              <div className="mt-4 flex flex-col gap-3 min-w-max">
+                {isLoading ? (
+                  <p className="text-sm text-[#909090] font-sora">Loading generasi pertama ...</p>
+                ) : null}
+
+                {isError ? (
+                  <p className="text-sm text-red-500 font-sora">Gagal memuat generasi pertama.</p>
+                ) : null}
+
+                {!isLoading && !isError && data?.data.length === 0 ? (
+                  <p className="text-sm text-[#909090] font-sora">Tidak ada data generasi pertama.</p>
+                ) : null}
+
+                {!isLoading && !isError
+                  ? data?.data.map((root, index) => {
+                    const people = [root.father, root.mother].filter(
+                      (person): person is Person => person !== null,
+                    );
+                    const father = people.find((person) => person.gender === 'MAN');
+                    const rootId = father?.id ?? people[0]?.id ?? `${index}`;
+                    const isOpen = Boolean(openedRoots[rootId]);
+
+                    return (
+                      <div
+                        key={`${root.father?.id ?? 'no-father'}-${root.mother?.id ?? 'no-mother'}-${index}`}
+                        className="relative"
+                      >
+                        <div className="flex items-start">
+                          <FamilyRootCard people={people} isTappable onTap={handleTapRoot} />
+
+                          {isOpen ? (
+                            <div className="relative pl-4 pt-2">
+                              <FamilyBranch personId={rootId} />
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })
+                  : null}
+              </div>
+            </section>
+          </main>
+        }
+      </div>
+
+
+      <PersonDetailModal
+        person={selectedPerson}
+        isOpen={Boolean(selectedPerson)}
+        onClose={() => setSelectedPerson(null)}
+      />
+    </>
   );
 }
