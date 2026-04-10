@@ -67,15 +67,12 @@ function CardHeader({ align }: { align: Align }) {
   return (
     <div className={`flex items-center ${isLeft ? 'justify-between' : 'justify-end gap-1'}`}>
       {isLeft ? (
-        <>
-          <div className="flex items-center gap-1">
-            <Image src="/ic_love.svg" alt="" width={16} height={16} />
-            <span className="text-[12px] font-semibold text-[#909090] font-sora">
-              Married Couple
-            </span>
-          </div>
-          <Image src="/ic_forward.svg" alt="lihat detail" width={24} height={24} />
-        </>
+        <div className="flex items-center gap-1">
+          <Image src="/ic_love.svg" alt="" width={16} height={16} />
+          <span className="text-[12px] font-semibold text-[#909090] font-sora">
+            Married Couple
+          </span>
+        </div>
       ) : (
         <>
           <span className="text-[12px] font-semibold text-[#909090] font-sora">

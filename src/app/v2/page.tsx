@@ -115,7 +115,7 @@ export default function Home() {
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
           placeholder="Search person name..."
-          className="w-full rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#242424] outline-none focus:border-[#242424]"
+          className="w-full rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 text-base text-[#242424] outline-none focus:border-[#242424]"
         />
 
         {searchInput.trim().length > 0 && searchInput.trim().length < 3 ? (

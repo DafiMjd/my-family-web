@@ -191,7 +191,7 @@ export default function Home() {
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder="Search person name..."
-            className="rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 mt-10 text-sm text-[#242424] outline-none focus:border-[#242424]"
+            className="rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 mt-10 text-base text-[#242424] outline-none focus:border-[#242424]"
           />
 
           {searchInput.trim().length > 0 && searchInput.trim().length < 3 ? (
@@ -233,10 +233,10 @@ export default function Home() {
         ) :
 
           <main className="flex flex-1 items-start justify-start overflow-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <section className="w-full px-6 pt-6 pb-6">
+            <section className="w-full p-6">
               <h1 className="text-lg font-semibold text-[#242424]">Family Tree</h1>
 
-              <div className="mt-4 flex flex-col gap-3 min-w-max">
+              <div className="mt-4 flex flex-col gap-3 min-w-max pr-6">
                 {isLoading ? (
                   <p className="text-sm text-[#909090] font-sora">Loading generasi pertama ...</p>
                 ) : null}
