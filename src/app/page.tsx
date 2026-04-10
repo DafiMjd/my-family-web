@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FamilyRootCard } from '@/app/components/FamilyRootCard';
 import { useFamilyChildren } from '@/hooks/use-family-children';
@@ -14,14 +14,22 @@ function toCardPeople(child: PersonWithSpouse): Person[] {
 }
 
 function FamilyBranch({
-  personId,
+  fatherId,
+  motherId,
   depth = 1,
 }: {
-  personId: string;
+  fatherId?: string | null;
+  motherId?: string | null;
   depth?: number;
 }) {
   const [openedChildren, setOpenedChildren] = useState<Record<string, boolean>>({});
-  const { data, isLoading, isError } = useFamilyChildren(personId,);
+  const parentQuery = useMemo(() => {
+    const q: { fatherId?: string; motherId?: string } = {};
+    if (fatherId) q.fatherId = fatherId;
+    if (motherId) q.motherId = motherId;
+    return q;
+  }, [fatherId, motherId]);
+  const { data, isLoading, isError } = useFamilyChildren(parentQuery);
   const children = data?.data ?? [];
 
   const visibleChildren = useMemo(
@@ -41,39 +49,19 @@ function FamilyBranch({
     return null;
   }
 
-  function handleTapChild(person: Person, people: Person[]) {
-    if (people.length > 1) {
-      const father = people.find((item) => item.gender === 'MAN');
-      if (!father) {
-        return;
-      }
-
-      setOpenedChildren((prev) => ({
-        ...prev,
-        [father.id]: !prev[father.id],
-      }));
-      return;
-    }
-
-    setOpenedChildren((prev) => ({
-      ...prev,
-      [person.id]: !prev[person.id],
-    }));
-  }
-
   return (
     <div className="flex flex-col">
       {visibleChildren.map((child, index) => {
         const people = toCardPeople(child);
         const father = people.find((item) => item.gender === 'MAN');
         const mother = people.find((item) => item.gender === 'WOMAN');
-        const nodeId = father?.id ?? father?.id ?? people[0]?.id ?? child.id;
-        const isOpen = Boolean(openedChildren[nodeId]);
+        const branchKey = `${child.id}-${child.spouse?.id ?? 'no-spouse'}-${depth}`;
+        const isOpen = Boolean(openedChildren[branchKey]);
         const isFirst = index === 0;
         const isLast = index === visibleChildren.length - 1;
 
         return (
-          <div key={`${child.id}-${depth}`} className="relative">
+          <div key={branchKey} className="relative">
             <div className="flex items-stretch gap-4">
               <div className="relative self-stretch pl-4 pt-2">
                 {index === 0 ? (
@@ -87,12 +75,24 @@ function FamilyBranch({
                 ) : null}
 
                 <div className="absolute left-0 top-8 h-px w-4 bg-[#D8D8D8]" />
-                <FamilyRootCard people={people} isTappable onTap={handleTapChild} />
+                <FamilyRootCard
+                  people={people}
+                  endMarriageDate={child.endMarriageDate}
+                  isTappable
+                  onTap={(_person, _people) => {
+                    setOpenedChildren((prev) => ({
+                      ...prev,
+                      [branchKey]: !prev[branchKey],
+                    }));
+                  }}
+                />
               </div>
 
               {isOpen ? (
                 <div className="pt-2">
-                  <FamilyBranch personId={nodeId} depth={depth + 1} />
+                  {father || mother ? (
+                    <FamilyBranch fatherId={father?.id ?? null} motherId={mother?.id ?? null} depth={depth + 1} />
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -216,6 +216,7 @@ export default function Home() {
                 <FamilyRootCard
                   key={person.id}
                   people={[person]}
+                  endMarriageDate={null}
                   isTappable
                   onTap={(tappedPerson) => setSelectedPerson(tappedPerson)}
                 />
@@ -264,11 +265,13 @@ export default function Home() {
                         className="relative"
                       >
                         <div className="flex items-start">
-                          <FamilyRootCard people={people} isTappable onTap={handleTapRoot} />
+                          <FamilyRootCard people={people} endMarriageDate={root.endMarriageDate} isTappable onTap={handleTapRoot} />
 
                           {isOpen ? (
                             <div className="relative pl-4 pt-2">
-                              <FamilyBranch personId={rootId} />
+                              {root.father || root.mother ? (
+                                <FamilyBranch fatherId={root.father?.id ?? null} motherId={root.mother?.id ?? null} />
+                              ) : null}
                             </div>
                           ) : null}
                         </div>

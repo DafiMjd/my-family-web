@@ -140,6 +140,7 @@ export default function Home() {
                   key={person.id}
                   people={[person]}
                   isTappable
+                  endMarriageDate={null}
                   onTap={(tappedPerson) => setSelectedPerson(tappedPerson)}
                 />
               ))
@@ -163,6 +164,7 @@ export default function Home() {
                 key={root.father?.id ?? root.mother?.id}
                 people={people}
                 isTappable={people.length > 0}
+                endMarriageDate={root.endMarriageDate}
                 onTap={(person) => {
                   if (root.isMarried) {
                     const payload = serializeParentPeople(root);

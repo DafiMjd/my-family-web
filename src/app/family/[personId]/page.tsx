@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
-import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FamilyRootCard } from '@/app/components/FamilyRootCard';
 import { PersonDetailModal } from '@/app/components/PersonDetailModal';
 import { useFamilyChildren } from '@/hooks/use-family-children';
@@ -21,12 +21,25 @@ function PersonCard({ person, className }: { person: FamilyPerson, className?: s
   );
 }
 
-function Parent({ mother, father }: { mother: FamilyPerson; father: FamilyPerson }) {
+function ParentHeader({ mother, father }: { mother: FamilyPerson | null; father: FamilyPerson | null }) {
+  if (father && mother) {
+    return (
+      <div className="flex items-center justify-center flex-row gap-10">
+        <PersonCard person={father} className="w-1/2" />
+        <Image src="/ic_love.svg" alt="" width={24} height={24} className={`w-8 h-8`} />
+        <PersonCard person={mother} className="w-1/2" />
+      </div>
+    );
+  }
+
+  const only = father ?? mother;
+  if (!only) {
+    return null;
+  }
+
   return (
-    <div className="flex items-center justify-center flex-row gap-10">
-      <PersonCard person={father} className="w-1/2" />
-      <Image src="/ic_love.svg" alt="" width={24} height={24} className={`w-8 h-8`} />
-      <PersonCard person={mother} className="w-1/2" />
+    <div className="flex items-center justify-center">
+      <PersonCard person={only} className="w-full max-w-xs" />
     </div>
   );
 }
@@ -35,24 +48,34 @@ export default function FamilyDetailPage() {
   const [title, setTitle] = useState('Detail Keluarga');
   const router = useRouter();
   const [selectedPerson, setSelectedPerson] = useState<FamilyPerson | null>(null);
-  const params = useParams<{ personId: string }>();
   const searchParams = useSearchParams();
-
-  const personId = params.personId;
   const parentPeople = useMemo(() => parseParentPeople(searchParams.get('parent')), [searchParams]);
-  const { data, isLoading, isError, error, refetch, isFetching } = useFamilyChildren(personId);
   const father = parentPeople.father;
   const mother = parentPeople.mother;
-
-  useEffect(() => {
-    if (!father || !mother) {
-      return;
-    }
-
-    setTitle(`Keluarga ${father.name} & ${mother.name}`);
+  const parentQuery = useMemo(() => {
+    const q: { fatherId?: string; motherId?: string } = {};
+    if (father) q.fatherId = father.id;
+    if (mother) q.motherId = mother.id;
+    return q;
   }, [father, mother]);
 
-  if (!father || !mother) {
+  const { data, isLoading, isError, error, refetch, isFetching } = useFamilyChildren(parentQuery);
+
+  useEffect(() => {
+    if (father && mother) {
+      setTitle(`Keluarga ${father.name} & ${mother.name}`);
+      return;
+    }
+    if (father) {
+      setTitle(`Keluarga ${father.name}`);
+      return;
+    }
+    if (mother) {
+      setTitle(`Keluarga ${mother.name}`);
+    }
+  }, [father, mother]);
+
+  if (!father && !mother) {
     return <div>Orang tua tidak ditemukan</div>;
   }
 
@@ -61,7 +84,7 @@ export default function FamilyDetailPage() {
       <div className="flex flex-col pt-8 gap-4 p-4">
         <section className="flex flex-col gap-4">
           <h1 className="text-[14px] font-semibold text-[#242424] font-sora">{title}</h1>
-          <Parent mother={mother} father={father} />
+          <ParentHeader mother={mother} father={father} />
         </section>
 
         <section className="flex flex-col gap-2">
@@ -92,10 +115,12 @@ export default function FamilyDetailPage() {
           {!isLoading && !isError
             ? data?.data.map((child) => {
               const people = toPeopleFromChild(child);
+              const childCardKey = `${child.id}-${child.spouse?.id ?? 'no-spouse'}`;
               return (
                 <FamilyRootCard
-                  key={child.id}
+                  key={childCardKey}
                   people={people}
+                  endMarriageDate={child.endMarriageDate}
                   isTappable={people.length > 0}
                   onTap={(person, tappedPeople) => {
                     if (!child.spouse) {
@@ -109,6 +134,7 @@ export default function FamilyDetailPage() {
                       father: nextFather,
                       mother: nextMother,
                       isMarried: Boolean(nextFather && nextMother),
+                      endMarriageDate: child.endMarriageDate,
                     } satisfies FamilyRoot);
                     router.push(`/family/${person.id}?parent=${payload}`);
                   }}

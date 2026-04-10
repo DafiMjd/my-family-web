@@ -1,16 +1,85 @@
 import { apiClient } from '@/lib/api-client';
 import type {
   ClosestRelatedPeopleResponse,
+  FamilyChildApiItem,
+  FamilyChildrenApiResponse,
   FamilyChildrenResponse,
+  FamilyRootApiItem,
+  FamilyRootsApiResponse,
+  FamilyRoot,
+  PersonWithSpouse,
   PersonListResponse,
   FamilyRootsResponse,
 } from '@/types/family-tree';
 
+function mapRootItemToFamilyRoot(item: FamilyRootApiItem): FamilyRoot {
+  const spouse = item.spouses[0] ?? null;
+
+  if (item.gender === 'MAN') {
+    return {
+      father: item,
+      mother: spouse,
+      isMarried: Boolean(spouse),
+      endMarriageDate: spouse?.endMarriageDate ?? null,
+    };
+  }
+
+  return {
+    father: spouse,
+    mother: item,
+    isMarried: Boolean(spouse),
+    endMarriageDate: spouse?.endMarriageDate ?? null,
+  };
+}
+
+function mapChildItemToPeopleWithSpouse(item: FamilyChildApiItem): PersonWithSpouse[] {
+  if (item.spouses.length === 0) {
+    return [
+      {
+        ...item,
+        spouse: null,
+        endMarriageDate: null,
+      },
+    ];
+  }
+
+  return item.spouses.map((spouse) => ({
+    ...item,
+    spouse,
+    endMarriageDate: spouse.endMarriageDate,
+  }));
+}
+
 export const familyTreeService = {
-  getRoots: (): Promise<FamilyRootsResponse> =>
-    apiClient<FamilyRootsResponse>('/api/family-tree/roots'),
-  getChildren: (personId: string): Promise<FamilyChildrenResponse> =>
-    apiClient<FamilyChildrenResponse>(`/api/family-tree/${personId}/children?withSpouse=true`),
+  getRoots: async (): Promise<FamilyRootsResponse> => {
+    const response = await apiClient<FamilyRootsApiResponse>('/api/family-tree/roots');
+    const mappedRoots = response.data.flatMap(mapRootItemToFamilyRoot);
+
+    return {
+      success: response.success,
+      data: mappedRoots,
+      count: mappedRoots.length,
+    };
+  },
+  getChildren: async (params: {
+    fatherId?: string;
+    motherId?: string;
+  }): Promise<FamilyChildrenResponse> => {
+    const q = new URLSearchParams();
+    if (params.fatherId) q.set('fatherId', params.fatherId);
+    if (params.motherId) q.set('motherId', params.motherId);
+    q.set('withSpouse', 'true');
+    const response = await apiClient<FamilyChildrenApiResponse>(
+      `/api/family-tree/children?${q.toString()}`,
+    );
+    const mappedChildren = response.data.flatMap(mapChildItemToPeopleWithSpouse);
+
+    return {
+      success: response.success,
+      data: mappedChildren,
+      count: mappedChildren.length,
+    };
+  },
   getClosestRelatedPeople: (personId: string): Promise<ClosestRelatedPeopleResponse> =>
     apiClient<ClosestRelatedPeopleResponse>(`/api/family-tree/${personId}/closest-related-people`),
   searchPeopleByName: (name: string, offset: number, limit: number): Promise<PersonListResponse> =>

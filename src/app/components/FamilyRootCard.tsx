@@ -2,11 +2,11 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import type { Person, FamilyRoot } from '@/types/family-tree';
+import { serializeParentPeople } from '@/lib/family-navigation';
+import type { FamilyRoot, Person } from '@/types/family-tree';
 import { Gender } from '@/types/family-tree';
 import { Avatar } from '@/app/components/Avatar';
 import Birthdate from './Birthdate';
-import { serializeParentPeople } from '@/lib/family-navigation';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -14,6 +14,7 @@ type Align = 'left' | 'right';
 
 export interface FamilyRootCardProps {
   people: Person[];
+  endMarriageDate: string | null;
   align?: Align;
   isTappable?: boolean;
   onTap?: (person: Person, people: Person[]) => void;
@@ -26,8 +27,20 @@ function getPersonRole(person: Person): string {
   return 'Istri';
 }
 
-function formatDate(iso: string): string {
-  return iso.slice(0, 10);
+function getDisplayName(member: Person): string {
+  if (member.deathDate) {
+    return `Alm. ${member.name}`;
+  }
+
+  return member.name;
+}
+
+function hasEndedMarriageDate(endMarriageDate: string | null): boolean {
+  if (!endMarriageDate) {
+    return false;
+  }
+
+  return typeof endMarriageDate === 'string' && endMarriageDate.length > 0;
 }
 
 // ─── Person Row ───────────────────────────────────────────────────────────────
@@ -44,14 +57,14 @@ function PersonRow({ member, role, align }: PersonRowProps) {
   return (
     <div className={`flex items-center gap-[7px] ${isLeft ? 'flex-row' : 'flex-row-reverse'}`}>
       <Avatar member={member} />
-      <div className={`flex flex-col ${isLeft ? 'items-start' : 'items-end'}`}>
+      <div className={`min-w-0 flex flex-col ${isLeft ? 'items-start' : 'items-end'}`}>
         {role && (
-          <span className="text-[12px] font-normal text-[#A2A2A2] font-sora leading-[1.2]">
+          <span className="max-w-full truncate text-[12px] font-normal text-[#A2A2A2] font-sora leading-[1.2]">
             {role}
           </span>
         )}
-        <span className="text-[16px] font-semibold text-[#242424] font-sora leading-normal">
-          {member.name}
+        <span className="max-w-full truncate text-[16px] font-semibold text-[#242424] font-sora leading-normal">
+          {getDisplayName(member)}
         </span>
         {member.birthDate && (
           <Birthdate birthDate={member.birthDate} align={align} />
@@ -73,7 +86,7 @@ function CardHeader({ align, onForwardTap }: { align: Align; onForwardTap?: () =
           <div className="flex items-center gap-1">
             <Image src="/ic_love.svg" alt="" width={16} height={16} />
             <span className="text-[12px] font-semibold text-[#909090] font-sora">
-              Married Couple
+              Pasangan
             </span>
           </div>
           <button
@@ -105,10 +118,12 @@ export function FamilyRootCard({
   people,
   align = 'left',
   isTappable = false,
+  endMarriageDate,
   onTap,
 }: FamilyRootCardProps) {
   const router = useRouter();
   const isMarried = people.length > 1;
+  const isEndedMarriage = hasEndedMarriageDate(endMarriageDate);
 
   if (people.length === 0) {
     return null;
@@ -119,6 +134,22 @@ export function FamilyRootCard({
   const canTap = isTappable && Boolean(onTap);
   const primaryPerson = people[0];
 
+  function handleForwardTap() {
+    if (!isMarried || !primaryPerson) {
+      return;
+    }
+
+    const father = people.find((member) => member.gender === Gender.MAN) ?? null;
+    const mother = people.find((member) => member.gender === Gender.WOMAN) ?? null;
+    const payload = serializeParentPeople({
+      father,
+      mother,
+      isMarried: true,
+      endMarriageDate,
+    } satisfies FamilyRoot);
+    router.push(`/family/${primaryPerson.id}?parent=${payload}`);
+  }
+
   function handleTap() {
     if (!canTap || !primaryPerson || !onTap) {
       return;
@@ -128,7 +159,7 @@ export function FamilyRootCard({
 
   return (
     <div
-      className={`bg-white rounded-lg p-2 flex flex-col gap-2 shadow-sm ${canTap ? 'cursor-pointer active:scale-[0.99] transition-transform' : ''
+      className={`${isEndedMarriage ? 'bg-[#e5e5e5]' : 'bg-white'} rounded-lg w-80 p-2 flex flex-col gap-2 shadow-sm ${canTap ? 'cursor-pointer active:scale-[0.99] transition-transform' : ''
         }`}
       onClick={handleTap}
       role={canTap ? 'button' : undefined}
@@ -143,19 +174,7 @@ export function FamilyRootCard({
         }
       }}
     >
-      {isMarried && (
-        <CardHeader
-          align={align}
-          onForwardTap={() => {
-            const payload = serializeParentPeople({
-              father: people[0],
-              mother: people[1],
-              isMarried: true,
-            });
-            router.push(`/family/${people[0].id}?parent=${payload}`);
-          }}
-        />
-      )}
+      {isMarried && <CardHeader align={align} onForwardTap={handleForwardTap} />}
 
       {people.map((person, index) => (
         <div key={person.id} className="flex flex-col gap-2">
