@@ -44,40 +44,40 @@ export default function FamilyDetailPage() {
   const mother = parentPeople.mother;
 
   if (!father || !mother) {
-    return <div>Parent not found</div>;
+    return <div>Orang tua tidak ditemukan</div>;
   }
 
   return (
     <>
       <div className="flex flex-col pt-8 gap-4 p-4">
         <section className="flex flex-col gap-4">
-          <h1 className="text-[14px] font-regular text-[#242424] font-sora">Family Detail</h1>
+          <h1 className="text-[14px] font-regular text-[#242424] font-sora">Detail Keluarga</h1>
           <Parent mother={mother} father={father} />
         </section>
 
         <section className="flex flex-col gap-2">
-          <h2 className="text-[14px] font-regular text-[#242424] font-sora">Children</h2>
+          <h2 className="text-[14px] font-regular text-[#242424] font-sora">Anak</h2>
 
           {isLoading ? (
-            <p className="text-sm text-[#909090] font-sora">Loading children...</p>
+            <p className="text-sm text-[#909090] font-sora">Memuat data anak...</p>
           ) : null}
 
           {isError ? (
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium text-red-500">Failed to load children</p>
+              <p className="text-sm font-medium text-red-500">Gagal memuat data anak</p>
               <p className="text-xs text-gray-400">{error.message}</p>
               <button
                 onClick={() => refetch()}
                 disabled={isFetching}
                 className="w-fit px-4 py-2 rounded-lg bg-[#242424] text-white text-sm font-sora font-semibold disabled:opacity-50 active:scale-95 transition-transform"
               >
-                {isFetching ? 'Loading...' : 'Try Again'}
+                {isFetching ? 'Memuat...' : 'Coba Lagi'}
               </button>
             </div>
           ) : null}
 
           {!isLoading && !isError && data?.data.length === 0 ? (
-            <p className="text-sm text-[#909090] font-sora">No children found.</p>
+            <p className="text-sm text-[#909090] font-sora">Data anak tidak ditemukan.</p>
           ) : null}
 
           {!isLoading && !isError

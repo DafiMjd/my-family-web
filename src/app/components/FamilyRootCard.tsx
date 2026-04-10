@@ -20,8 +20,8 @@ export interface FamilyRootCardProps {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getPersonRole(person: Person): string {
-  if (person.gender === Gender.MAN) return 'Husband';
-  return 'Wife';
+  if (person.gender === Gender.MAN) return 'Suami';
+  return 'Istri';
 }
 
 function formatDate(iso: string): string {
@@ -70,13 +70,13 @@ function CardHeader({ align }: { align: Align }) {
         <div className="flex items-center gap-1">
           <Image src="/ic_love.svg" alt="" width={16} height={16} />
           <span className="text-[12px] font-semibold text-[#909090] font-sora">
-            Married Couple
+            Pasangan
           </span>
         </div>
       ) : (
         <>
           <span className="text-[12px] font-semibold text-[#909090] font-sora">
-            Married Couple
+            Pasangan
           </span>
           <Image src="/ic_love.svg" alt="" width={16} height={16} />
         </>

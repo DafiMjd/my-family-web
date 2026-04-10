@@ -42,11 +42,11 @@ export function PersonDetailModal({ person, isOpen, onClose }: PersonDetailModal
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-[16px] font-semibold text-[#242424] font-sora">Person Detail</h2>
+          <h2 className="text-[16px] font-semibold text-[#242424] font-sora">Detail Orang</h2>
           <button
             onClick={onClose}
             className="h-8 w-8 rounded-full bg-[#F0F0F0] text-[#242424] text-sm font-semibold"
-            aria-label="Close person detail"
+            aria-label="Tutup detail orang"
           >
             x
           </button>
@@ -57,19 +57,19 @@ export function PersonDetailModal({ person, isOpen, onClose }: PersonDetailModal
           <Birthdate birthDate={person.birthDate} />
         </div>
 
-        {isLoading ? <p className="text-sm text-[#909090] font-sora">Loading related people...</p> : null}
-        {isError ? <p className="text-sm text-red-500 font-sora">Failed to load related people.</p> : null}
+        {isLoading ? <p className="text-sm text-[#909090] font-sora">Memuat kerabat terdekat...</p> : null}
+        {isError ? <p className="text-sm text-red-500 font-sora">Gagal memuat kerabat terdekat.</p> : null}
 
         {!isLoading && !isError ? (
           <div className="flex flex-col gap-2">
-            <h2 className="text-[14px] font-semibold text-[#909090] font-sora">Closest Related People</h2>
+            <h2 className="text-[14px] font-semibold text-[#909090] font-sora">Kerabat Terdekat</h2>
             <div className="flex overflow-x-auto gap-4">
-              {spouse ? <RelatedPerson person={spouse} label="Spouse" /> : null}
+              {spouse ? <RelatedPerson person={spouse} label="Pasangan" /> : null}
               {children.map((child) => (
-                <RelatedPerson key={child.id} person={child} label="Child" />
+                <RelatedPerson key={child.id} person={child} label="Anak" />
               ))}
               {parents.map((parent) => (
-                <RelatedPerson key={parent.id} person={parent} label="Parent" />
+                <RelatedPerson key={parent.id} person={parent} label="Orang Tua" />
               ))}
             </div>
           </div>

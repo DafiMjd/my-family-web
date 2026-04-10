@@ -114,24 +114,24 @@ export default function Home() {
           type="text"
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
-          placeholder="Search person name..."
+          placeholder="Cari nama orang..."
           className="w-full rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 text-base text-[#242424] outline-none focus:border-[#242424]"
         />
 
         {searchInput.trim().length > 0 && searchInput.trim().length < 3 ? (
-          <p className="text-xs text-[#909090] font-sora">Type at least 3 characters to search.</p>
+          <p className="text-xs text-[#909090] font-sora">Ketik minimal 3 karakter untuk mencari.</p>
         ) : null}
 
         {isSearchActive ? (
           <>
-            {isSearchLoading ? <p className="text-sm text-[#909090] font-sora">Searching...</p> : null}
+            {isSearchLoading ? <p className="text-sm text-[#909090] font-sora">Mencari...</p> : null}
 
             {isSearchError ? (
               <p className="text-sm text-red-500 font-sora">{searchError.message}</p>
             ) : null}
 
             {!isSearchLoading && !isSearchError && searchPeople.length === 0 ? (
-              <p className="text-sm text-[#909090] font-sora">No person found.</p>
+              <p className="text-sm text-[#909090] font-sora">Orang tidak ditemukan.</p>
             ) : null}
 
             {!isSearchLoading && !isSearchError
@@ -150,7 +150,7 @@ export default function Home() {
             ) : null}
 
             {isFetchingNextPage ? (
-              <p className="text-xs text-[#909090] font-sora text-center">Loading more...</p>
+              <p className="text-xs text-[#909090] font-sora text-center">Memuat lebih banyak...</p>
             ) : null}
           </>
         ) : isLoading ? (

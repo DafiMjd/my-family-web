@@ -21,7 +21,7 @@ const sora = Sora({
 
 export const metadata: Metadata = {
   title: "Pohon Keluarga",
-  description: "My Family Directory",
+  description: "Direktori Keluarga Saya",
 };
 
 export default function RootLayout({

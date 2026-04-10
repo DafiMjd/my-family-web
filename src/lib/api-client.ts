@@ -19,13 +19,13 @@ export async function apiClient<T>(path: string, init?: RequestInit): Promise<T>
   });
 
   if (!res.ok) {
-    throw new ApiError(res.status, `Request failed: ${res.status} ${res.statusText}`);
+    throw new ApiError(res.status, `Permintaan gagal: ${res.status} ${res.statusText}`);
   }
 
   const json: unknown = await res.json();
 
   if (typeof json !== 'object' || json === null || !('success' in json) || !(json as { success: unknown }).success) {
-    throw new ApiError(res.status, 'API returned an unsuccessful response');
+    throw new ApiError(res.status, 'API mengembalikan respons yang tidak berhasil');
   }
 
   return json as T;

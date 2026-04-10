@@ -30,11 +30,11 @@ function FamilyBranch({
   );
 
   if (isLoading) {
-    return <p className="text-sm text-[#909090] font-sora">Loading children...</p>;
+    return <p className="text-sm text-[#909090] font-sora">Memuat data anak...</p>;
   }
 
   if (isError) {
-    return <p className="text-sm text-red-500 font-sora">Failed to load children.</p>;
+    return <p className="text-sm text-red-500 font-sora">Gagal memuat data anak.</p>;
   }
 
   if (visibleChildren.length === 0) {
@@ -190,25 +190,25 @@ export default function Home() {
             type="text"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search person name..."
+            placeholder="Cari nama orang..."
             className="rounded-lg border border-[#E0E0E0] bg-white px-3 py-2 mt-10 text-base text-[#242424] outline-none focus:border-[#242424]"
           />
 
           {searchInput.trim().length > 0 && searchInput.trim().length < 3 ? (
-            <p className="text-xs pt-2 text-[#909090] font-sora">Type at least 3 characters to search.</p>
+            <p className="text-xs pt-2 text-[#909090] font-sora">Ketik minimal 3 karakter untuk mencari.</p>
           ) : null}
         </div>
 
         {isSearchActive ? (
           <div className="flex flex-col p-4 gap-2">
-            {isSearchLoading ? <p className="text-sm text-[#909090] font-sora">Searching...</p> : null}
+            {isSearchLoading ? <p className="text-sm text-[#909090] font-sora">Mencari...</p> : null}
 
             {isSearchError ? (
               <p className="text-sm text-red-500 font-sora">{searchError.message}</p>
             ) : null}
 
             {!isSearchLoading && !isSearchError && searchPeople.length === 0 ? (
-              <p className="text-sm text-[#909090] font-sora">No person found.</p>
+              <p className="text-sm text-[#909090] font-sora">Orang tidak ditemukan.</p>
             ) : null}
 
             {!isSearchLoading && !isSearchError
@@ -227,18 +227,18 @@ export default function Home() {
             ) : null}
 
             {isFetchingNextPage ? (
-              <p className="text-xs text-[#909090] font-sora text-center">Loading more...</p>
+              <p className="text-xs text-[#909090] font-sora text-center">Memuat lebih banyak...</p>
             ) : null}
           </div>
         ) :
 
           <main className="flex flex-1 items-start justify-start overflow-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <section className="w-full p-6">
-              <h1 className="text-lg font-semibold text-[#242424]">Family Tree</h1>
+              <h1 className="text-lg font-semibold text-[#242424]">Pohon Keluarga</h1>
 
               <div className="mt-4 flex flex-col gap-3 min-w-max pr-6">
                 {isLoading ? (
-                  <p className="text-sm text-[#909090] font-sora">Loading generasi pertama ...</p>
+                  <p className="text-sm text-[#909090] font-sora">Memuat generasi pertama...</p>
                 ) : null}
 
                 {isError ? (
