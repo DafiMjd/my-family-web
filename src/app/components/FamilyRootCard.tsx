@@ -1,10 +1,12 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import type { Person, FamilyRoot } from '@/types/family-tree';
 import { Gender } from '@/types/family-tree';
 import { Avatar } from '@/app/components/Avatar';
 import Birthdate from './Birthdate';
+import { serializeParentPeople } from '@/lib/family-navigation';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,18 +63,30 @@ function PersonRow({ member, role, align }: PersonRowProps) {
 
 // ─── Card Header ──────────────────────────────────────────────────────────────
 
-function CardHeader({ align }: { align: Align }) {
+function CardHeader({ align, onForwardTap }: { align: Align; onForwardTap?: () => void }) {
   const isLeft = align === 'left';
 
   return (
     <div className={`flex items-center ${isLeft ? 'justify-between' : 'justify-end gap-1'}`}>
       {isLeft ? (
-        <div className="flex items-center gap-1">
-          <Image src="/ic_love.svg" alt="" width={16} height={16} />
-          <span className="text-[12px] font-semibold text-[#909090] font-sora">
-            Pasangan
-          </span>
-        </div>
+        <>
+          <div className="flex items-center gap-1">
+            <Image src="/ic_love.svg" alt="" width={16} height={16} />
+            <span className="text-[12px] font-semibold text-[#909090] font-sora">
+              Married Couple
+            </span>
+          </div>
+          <button
+            type="button"
+            aria-label="Buka halaman keluarga"
+            onClick={(event) => {
+              event.stopPropagation();
+              onForwardTap?.();
+            }}
+          >
+            <Image src="/ic_forward.svg" alt="lihat detail" width={24} height={24} />
+          </button>
+        </>
       ) : (
         <>
           <span className="text-[12px] font-semibold text-[#909090] font-sora">
@@ -93,6 +107,7 @@ export function FamilyRootCard({
   isTappable = false,
   onTap,
 }: FamilyRootCardProps) {
+  const router = useRouter();
   const isMarried = people.length > 1;
 
   if (people.length === 0) {
@@ -128,7 +143,19 @@ export function FamilyRootCard({
         }
       }}
     >
-      {isMarried && <CardHeader align={align} />}
+      {isMarried && (
+        <CardHeader
+          align={align}
+          onForwardTap={() => {
+            const payload = serializeParentPeople({
+              father: people[0],
+              mother: people[1],
+              isMarried: true,
+            });
+            router.push(`/family/${people[0].id}?parent=${payload}`);
+          }}
+        />
+      )}
 
       {people.map((person, index) => (
         <div key={person.id} className="flex flex-col gap-2">

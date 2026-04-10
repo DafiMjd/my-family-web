@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { FamilyRootCard } from '@/app/components/FamilyRootCard';
@@ -32,6 +32,7 @@ function Parent({ mother, father }: { mother: FamilyPerson; father: FamilyPerson
 }
 
 export default function FamilyDetailPage() {
+  const [title, setTitle] = useState('Detail Keluarga');
   const router = useRouter();
   const [selectedPerson, setSelectedPerson] = useState<FamilyPerson | null>(null);
   const params = useParams<{ personId: string }>();
@@ -43,6 +44,14 @@ export default function FamilyDetailPage() {
   const father = parentPeople.father;
   const mother = parentPeople.mother;
 
+  useEffect(() => {
+    if (!father || !mother) {
+      return;
+    }
+
+    setTitle(`Keluarga ${father.name} & ${mother.name}`);
+  }, [father, mother]);
+
   if (!father || !mother) {
     return <div>Orang tua tidak ditemukan</div>;
   }
@@ -51,7 +60,7 @@ export default function FamilyDetailPage() {
     <>
       <div className="flex flex-col pt-8 gap-4 p-4">
         <section className="flex flex-col gap-4">
-          <h1 className="text-[14px] font-regular text-[#242424] font-sora">Detail Keluarga</h1>
+          <h1 className="text-[14px] font-semibold text-[#242424] font-sora">{title}</h1>
           <Parent mother={mother} father={father} />
         </section>
 
@@ -82,30 +91,30 @@ export default function FamilyDetailPage() {
 
           {!isLoading && !isError
             ? data?.data.map((child) => {
-                const people = toPeopleFromChild(child);
-                return (
-                  <FamilyRootCard
-                    key={child.id}
-                    people={people}
-                    isTappable={people.length > 0}
-                    onTap={(person, tappedPeople) => {
-                      if (!child.spouse) {
-                        setSelectedPerson(person);
-                        return;
-                      }
+              const people = toPeopleFromChild(child);
+              return (
+                <FamilyRootCard
+                  key={child.id}
+                  people={people}
+                  isTappable={people.length > 0}
+                  onTap={(person, tappedPeople) => {
+                    if (!child.spouse) {
+                      setSelectedPerson(person);
+                      return;
+                    }
 
-                      const nextFather = tappedPeople.find((member) => member.gender === Gender.MAN) ?? null;
-                      const nextMother = tappedPeople.find((member) => member.gender === Gender.WOMAN) ?? null;
-                      const payload = serializeParentPeople({
-                        father: nextFather,
-                        mother: nextMother,
-                        isMarried: Boolean(nextFather && nextMother),
-                      } satisfies FamilyRoot);
-                      router.push(`/family/${person.id}?parent=${payload}`);
-                    }}
-                  />
-                );
-              })
+                    const nextFather = tappedPeople.find((member) => member.gender === Gender.MAN) ?? null;
+                    const nextMother = tappedPeople.find((member) => member.gender === Gender.WOMAN) ?? null;
+                    const payload = serializeParentPeople({
+                      father: nextFather,
+                      mother: nextMother,
+                      isMarried: Boolean(nextFather && nextMother),
+                    } satisfies FamilyRoot);
+                    router.push(`/family/${person.id}?parent=${payload}`);
+                  }}
+                />
+              );
+            })
             : null}
         </section>
       </div>
