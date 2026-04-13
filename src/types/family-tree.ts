@@ -9,7 +9,7 @@ export interface Person {
   id: string;
   name: string;
   gender: Gender;
-  birthDate: string;
+  birthDate: string | null;
   deathDate: string | null;
   bio: string | null;
   profilePictureUrl: string | null;
@@ -73,7 +73,9 @@ function mapRootItemToFamilyRoots(item: FamilyRootApiItem): FamilyRoot[] {
     return [{ father: null, mother: item, isMarried: false, endMarriageDate: null }];
   }
 
-  return item.spouses.map((spouse) => {
+  const spouses = item.spouses.reverse();
+
+  return spouses.map((spouse) => {
     if (item.gender === 'MAN') {
       return {
         father: item,

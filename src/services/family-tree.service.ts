@@ -12,24 +12,32 @@ import type {
   FamilyRootsResponse,
 } from '@/types/family-tree';
 
-function mapRootItemToFamilyRoot(item: FamilyRootApiItem): FamilyRoot {
-  const spouse = item.spouses[0] ?? null;
+function mapRootItemToFamilyRoot(item: FamilyRootApiItem): FamilyRoot[] {
+  if (item.spouses.length === 0) {
+    if (item.gender === 'MAN') {
+      return [{ father: item, mother: null, isMarried: false, endMarriageDate: null }];
+    }
 
-  if (item.gender === 'MAN') {
-    return {
-      father: item,
-      mother: spouse,
-      isMarried: Boolean(spouse),
-      endMarriageDate: spouse?.endMarriageDate ?? null,
-    };
+    return [{ father: null, mother: item, isMarried: false, endMarriageDate: null }];
   }
 
-  return {
-    father: spouse,
-    mother: item,
-    isMarried: Boolean(spouse),
-    endMarriageDate: spouse?.endMarriageDate ?? null,
-  };
+  return item.spouses.map((spouse) => {
+    if (item.gender === 'MAN') {
+      return {
+        father: item,
+        mother: spouse,
+        isMarried: true,
+        endMarriageDate: spouse.endMarriageDate,
+      };
+    }
+
+    return {
+      father: spouse,
+      mother: item,
+      isMarried: true,
+      endMarriageDate: spouse.endMarriageDate,
+    };
+  });
 }
 
 function mapChildItemToPeopleWithSpouse(item: FamilyChildApiItem): PersonWithSpouse[] {
