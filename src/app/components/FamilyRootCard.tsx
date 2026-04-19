@@ -18,6 +18,7 @@ export interface FamilyRootCardProps {
   align?: Align;
   isTappable?: boolean;
   onTap?: (person: Person, people: Person[]) => void;
+  withForwardTap?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -62,6 +63,33 @@ interface PersonRowProps {
   divorcedCouple: boolean;
 }
 
+function PersonContactLines({ member, align }: { member: Person; align: Align }) {
+  const phone = member.phoneNumber?.trim();
+  const address = member.address?.trim();
+  if (!phone && !address) {
+    return null;
+  }
+
+  const textAlign = align === 'right' ? 'text-right' : 'text-left';
+
+  return (
+    <div className={`mt-0.5 flex w-full max-w-full flex-col gap-0.5 ${textAlign}`}>
+      {phone ? (
+        <span className="max-w-full truncate text-[11px] font-normal text-[#A2A2A2] font-sora">
+          {phone}
+        </span>
+      ) : null}
+      {address ? (
+        <span
+          className={`max-w-full text-[11px] font-normal text-[#A2A2A2] font-sora line-clamp-3 whitespace-pre-wrap wrap-break-word ${textAlign}`}
+        >
+          {address}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 function PersonRow({ member, role, align, divorcedCouple }: PersonRowProps) {
   const isLeft = align === 'left';
   const rowBg = getPersonRowBackgroundColor(member, divorcedCouple);
@@ -72,7 +100,7 @@ function PersonRow({ member, role, align, divorcedCouple }: PersonRowProps) {
       style={rowBg ? { backgroundColor: rowBg } : undefined}
     >
       <Avatar member={member} />
-      <div className={`min-w-0 flex flex-col ${isLeft ? 'items-start' : 'items-end'}`}>
+      <div className={`min-w-0 flex flex-1 flex-col ${isLeft ? 'items-start' : 'items-end'}`}>
         {role && (
           <span className="max-w-full truncate text-[12px] font-normal text-[#A2A2A2] font-sora leading-[1.2]">
             {role}
@@ -84,6 +112,7 @@ function PersonRow({ member, role, align, divorcedCouple }: PersonRowProps) {
         {member.birthDate && (
           <Birthdate birthDate={member.birthDate} deathDate={member.deathDate} align={align} />
         )}
+        <PersonContactLines member={member} align={align} />
       </div>
     </div>
   );
@@ -91,7 +120,7 @@ function PersonRow({ member, role, align, divorcedCouple }: PersonRowProps) {
 
 // ─── Card Header ──────────────────────────────────────────────────────────────
 
-function CardHeader({ align, onForwardTap }: { align: Align; onForwardTap?: () => void }) {
+function CardHeader({ align, onForwardTap, withForwardTap }: { align: Align; onForwardTap?: () => void, withForwardTap?: boolean }) {
   const isLeft = align === 'left';
 
   return (
@@ -104,16 +133,18 @@ function CardHeader({ align, onForwardTap }: { align: Align; onForwardTap?: () =
               Pasangan
             </span>
           </div>
-          <button
-            type="button"
-            aria-label="Buka halaman keluarga"
-            onClick={(event) => {
-              event.stopPropagation();
-              onForwardTap?.();
-            }}
-          >
-            <Image src="/ic_forward.svg" alt="lihat detail" width={24} height={24} />
-          </button>
+          {withForwardTap ? (
+            <button
+              type="button"
+              aria-label="Buka halaman keluarga"
+              onClick={(event) => {
+                event.stopPropagation();
+                onForwardTap?.();
+              }}
+            >
+              <Image src="/ic_forward.svg" alt="lihat detail" width={24} height={24} />
+            </button>
+          ) : null}
         </>
       ) : (
         <>
@@ -135,6 +166,7 @@ export function FamilyRootCard({
   isTappable = false,
   endMarriageDate,
   onTap,
+  withForwardTap = true,
 }: FamilyRootCardProps) {
   const router = useRouter();
   const isMarried = people.length > 1;
@@ -190,7 +222,7 @@ export function FamilyRootCard({
         }
       }}
     >
-      {isMarried && <div className="m-2"><CardHeader align={align} onForwardTap={handleForwardTap} /></div>}
+      {isMarried && <div className="m-2"><CardHeader align={align} onForwardTap={handleForwardTap} withForwardTap={withForwardTap} /></div>}
 
       {people.map((person, index) => (
         <div key={person.id} className="flex flex-col">

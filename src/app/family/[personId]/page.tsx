@@ -44,6 +44,43 @@ function ParentHeader({ mother, father }: { mother: FamilyPerson | null; father:
   );
 }
 
+function ParentsAddressSummary({
+  father,
+  mother,
+}: {
+  father: FamilyPerson | null;
+  mother: FamilyPerson | null;
+}) {
+  const fatherAddr = father?.address?.trim() ?? '';
+  const motherAddr = mother?.address?.trim() ?? '';
+  if (!fatherAddr && !motherAddr) {
+    return null;
+  }
+
+  if (fatherAddr && motherAddr && fatherAddr === motherAddr) {
+    return (
+      <p className="max-w-full text-center text-[12px] font-normal leading-snug text-[#909090] font-sora line-clamp-3 whitespace-pre-wrap wrap-break-word">
+        Alamat: {fatherAddr}
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex max-w-full flex-col gap-1.5">
+      {fatherAddr ? (
+        <p className="max-w-full text-center text-[12px] font-normal leading-snug text-[#909090] font-sora line-clamp-3 whitespace-pre-wrap wrap-break-word">
+          Alamat Ayah: {fatherAddr}
+        </p>
+      ) : null}
+      {motherAddr ? (
+        <p className="max-w-full text-center text-[12px] font-normal leading-snug text-[#909090] font-sora line-clamp-3 whitespace-pre-wrap wrap-break-word">
+          Alamat Ibu: {motherAddr}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export default function FamilyDetailPage() {
   const [title, setTitle] = useState('Detail Keluarga');
   const router = useRouter();
@@ -88,6 +125,7 @@ export default function FamilyDetailPage() {
         </section>
 
         <section className="flex flex-col gap-2">
+          <ParentsAddressSummary father={father} mother={mother} />
           <h2 className="text-[14px] font-regular text-[#242424] font-sora">Anak</h2>
 
           {isLoading ? (
@@ -138,6 +176,7 @@ export default function FamilyDetailPage() {
                     } satisfies FamilyRoot);
                     router.push(`/family/${person.id}?parent=${payload}`);
                   }}
+                  withForwardTap={false}
                 />
               );
             })
