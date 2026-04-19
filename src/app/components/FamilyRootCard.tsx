@@ -43,19 +43,34 @@ function hasEndedMarriageDate(endMarriageDate: string | null): boolean {
   return typeof endMarriageDate === 'string' && endMarriageDate.length > 0;
 }
 
+function getPersonRowBackgroundColor(member: Person, divorcedCouple: boolean): string | undefined {
+  if (member.deathDate) {
+    return '#cce6ea';
+  }
+  if (divorcedCouple) {
+    return '#f1dfdf';
+  }
+  return undefined;
+}
+
 // ─── Person Row ───────────────────────────────────────────────────────────────
 
 interface PersonRowProps {
   member: Person;
   role?: string;
   align: Align;
+  divorcedCouple: boolean;
 }
 
-function PersonRow({ member, role, align }: PersonRowProps) {
+function PersonRow({ member, role, align, divorcedCouple }: PersonRowProps) {
   const isLeft = align === 'left';
+  const rowBg = getPersonRowBackgroundColor(member, divorcedCouple);
 
   return (
-    <div className={`flex items-center gap-[7px] ${isLeft ? 'flex-row' : 'flex-row-reverse'}`}>
+    <div
+      className={`flex items-center gap-[7px] p-2 ${isLeft ? 'flex-row' : 'flex-row-reverse'}`}
+      style={rowBg ? { backgroundColor: rowBg } : undefined}
+    >
       <Avatar member={member} />
       <div className={`min-w-0 flex flex-col ${isLeft ? 'items-start' : 'items-end'}`}>
         {role && (
@@ -67,7 +82,7 @@ function PersonRow({ member, role, align }: PersonRowProps) {
           {getDisplayName(member)}
         </span>
         {member.birthDate && (
-          <Birthdate birthDate={member.birthDate} align={align} />
+          <Birthdate birthDate={member.birthDate} deathDate={member.deathDate} align={align} />
         )}
       </div>
     </div>
@@ -124,6 +139,7 @@ export function FamilyRootCard({
   const router = useRouter();
   const isMarried = people.length > 1;
   const isEndedMarriage = hasEndedMarriageDate(endMarriageDate);
+  const divorcedCouple = isMarried && isEndedMarriage;
 
   if (people.length === 0) {
     return null;
@@ -159,7 +175,7 @@ export function FamilyRootCard({
 
   return (
     <div
-      className={`${isEndedMarriage ? 'bg-[#e5e5e5]' : 'bg-white'} rounded-lg w-80 p-2 flex flex-col gap-2 shadow-sm ${canTap ? 'cursor-pointer active:scale-[0.99] transition-transform' : ''
+      className={`rounded-lg w-80 flex flex-col shadow-sm ${canTap ? 'cursor-pointer active:scale-[0.99] transition-transform' : ''
         }`}
       onClick={handleTap}
       role={canTap ? 'button' : undefined}
@@ -174,18 +190,25 @@ export function FamilyRootCard({
         }
       }}
     >
-      {isMarried && <CardHeader align={align} onForwardTap={handleForwardTap} />}
+      {isMarried && <div className="m-2"><CardHeader align={align} onForwardTap={handleForwardTap} /></div>}
 
       {people.map((person, index) => (
-        <div key={person.id} className="flex flex-col gap-2">
+        <div key={person.id} className="flex flex-col">
           <PersonRow
             member={person}
             role={isMarried ? getPersonRole(person) : undefined}
             align={align}
+            divorcedCouple={divorcedCouple}
           />
           {index < people.length - 1 && <div className="h-px w-full bg-[#EDEDED]" />}
         </div>
       ))}
+
+      {divorcedCouple && <div className="flex flex-col m-2">
+        <span className="text-[11px] font-normal text-[#A2A2A2] font-sora">
+          Sudah tidak bersama
+        </span>
+      </div>}
     </div>
   );
 }
